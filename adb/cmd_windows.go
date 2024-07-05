@@ -11,10 +11,7 @@ func Exec(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
+	return string(out), err
 }
 
 func ExecAsync(name string, args ...string) (chan string, chan error) {

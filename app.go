@@ -1,20 +1,30 @@
 package main
 
 import (
-	"log/slog"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/ying32/govcl/vcl"
 
 	"adb-shell/adb"
 )
 
+const (
+	InstallApk   = "install.apk"
+	UninstallApk = "uninstall.apk"
+
+	PackageName       = "com.ninelock.mobile"
+	ReceiverClasspath = "com.ninelock.mobile/com.ninelock.mobile.core.manage.DeviceReceiver"
+)
+
 type App struct {
-	wd   string
-	view *MainForm
+	wd      string
+	view    *MainForm
+	devices []*adb.Device
 }
 
 func NewApp() *App {
@@ -23,6 +33,7 @@ func NewApp() *App {
 
 func (a *App) Run() {
 	a.init()
+	a.runTask()
 	a.showView()
 }
 
@@ -45,23 +56,26 @@ func (a *App) init() {
 	a.wd = filepath.Join(dir, "data")
 }
 
-func (a *App) showView() {
-	vcl.DEBUG = false
-	vcl.Application.SetScaled(true)
-	vcl.Application.Initialize()
-	vcl.Application.SetMainFormOnTaskBar(true)
+func (a *App) runTask() {
+	t := time.NewTicker(3 * time.Second)
+	go func() {
+		for {
+			select {
+			case <-t.C:
+				func() {
+					defer func() {
+						if err := recover(); err != nil {
+							fmt.Printf("recover:%v\n", err)
+						}
+					}()
 
-	// 主窗口
-	vcl.Application.CreateForm(&a.view)
-
-	// 显示事件
-	a.view.SetOnShow(func(sender vcl.IObject) {
-		err := adb.Start()
-		if err != nil {
-			slog.Error("adb start error", err)
+					_ = adb.Start()
+				}()
+			}
 		}
-	})
+	}()
+}
 
-	// 启动应用
-	vcl.Application.Run()
+func (a *App) showView() {
+	vcl.RunApp(&a.view)
 }

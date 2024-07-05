@@ -9,11 +9,16 @@ type Device struct {
 	Name    string
 	Model   string
 	Brand   string
+	Status  string
 	Version string
 }
 
 func (d *Device) String() string {
-	return fmt.Sprintf("%s %s %s Android%s", d.Name, d.Model, d.Brand, d.Version)
+	if d.Status != "device" {
+		return fmt.Sprintf("%s %s", d.Name, d.Status)
+	} else {
+		return fmt.Sprintf("%s %s %s Android%s", d.Name, d.Model, d.Brand, d.Version)
+	}
 }
 
 func Start() error {
@@ -21,9 +26,8 @@ func Start() error {
 	return err
 }
 
-func Connect() error {
-	_, err := Exec("adb", "reconnect")
-	return err
+func Connect() (string, error) {
+	return Exec("adb", "reconnect")
 }
 
 func Devices() ([]*Device, error) {
@@ -43,6 +47,14 @@ func Devices() ([]*Device, error) {
 			continue
 		}
 		name := fields[0]
+		status := fields[1]
+		if status != "device" {
+			ds = append(ds, &Device{
+				Name:   name,
+				Status: status,
+			})
+			continue
+		}
 
 		// get device model
 		out, err = Exec("adb", "-s", name, "shell", "getprop", "ro.product.model")
@@ -69,20 +81,21 @@ func Devices() ([]*Device, error) {
 			Name:    name,
 			Model:   model,
 			Brand:   brand,
+			Status:  status,
 			Version: version,
 		})
 	}
 	return ds, nil
 }
 
+func EnableOwner(device, classpath string) (string, error) {
+	return Exec("adb", "-s", device, "shell", "dpm", "set-device-owner", classpath)
+}
+
 func InstallApk(device, apk string) (string, error) {
 	return Exec("adb", "-s", device, "install", "-r", apk)
 }
 
-func UninstallApk(device, pkg string) (string, error) {
-	return Exec("adb", "-s", device, "uninstall", pkg)
-}
-
-func EnableDeviceOwner(device, classpath string) (string, error) {
-	return Exec("adb", "-s", device, "shell", "dpm", "set-device-owner", classpath)
+func Uninstall(device, app string) (string, error) {
+	return Exec("adb", "-s", device, "uninstall", app)
 }

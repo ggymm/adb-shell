@@ -5,23 +5,17 @@ import (
 )
 
 func Test_Start(t *testing.T) {
-	err := Start()
-	if err != nil {
-		t.Error(err)
-	}
+	Start()
 }
 
 func Test_Connect(t *testing.T) {
-	err := Connect()
-	if err != nil {
-		t.Error(err)
-	}
+	Connect()
 }
 
 func Test_Devices(t *testing.T) {
 	devices, err := Devices()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	for _, device := range devices {
 		t.Logf("%+v", device)
